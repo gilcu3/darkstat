@@ -10,14 +10,17 @@
 #define __DARKSTAT_HOSTS_DB_H
 
 #include <sys/types.h> /* for uint64_t */
+#include <GeoIP.h>
 
 #include "addr.h"
+
 
 struct hashtable;
 
 struct host {
    struct addr addr;
    char *dns;
+   char *country;
    uint8_t mac_addr[6];
    /* last_seen_mono is converted to/from time_t in export/import.
     * It can be negative (due to machine reboots).

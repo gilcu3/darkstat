@@ -211,6 +211,39 @@ find_func_ip_proto(const struct bucket *b, const void *key)
    return (b->u.ip_proto.proto == CASTKEY(uint8_t));
 }
 
+void
+country_lookup(char** country, const struct addr* address)
+{
+   uint8_t correct;
+   const char *ip;
+   const char *returnedCountry;
+   GeoIP *gi;
+   *country = NULL;
+   ip = addr_to_str(address);
+   
+   if(address->family == IPv4){
+     // = xstrdup("dassa");
+     gi = GeoIP_open("/usr/share/GeoIP/GeoIP.dat", GEOIP_STANDARD | GEOIP_CHECK_CACHE);
+     correct = 0;
+   }
+   else if(address->family == IPv6){
+      gi = GeoIP_open("/usr/share/GeoIP/GeoIPv6.dat", GEOIP_STANDARD | GEOIP_CHECK_CACHE);
+      correct = 0;
+   }
+   else{
+      correct = 1;
+   }
+
+   if(correct == 0 && gi != NULL){
+      returnedCountry = GeoIP_country_code_by_name(gi, ip);
+      if(returnedCountry != NULL){
+         *country = xstrdup(returnedCountry);
+      }
+   }
+}
+
+
+
 /* ---------------------------------------------------------------------------
  * make_func collection
  */
@@ -230,6 +263,7 @@ make_func_host(const void *key)
    MAKE_BUCKET(b, h, host);
    h->addr = CASTKEY(struct addr);
    h->dns = NULL;
+   country_lookup(&(h->country), &(h->addr));
    h->last_seen_mono = 0;
    memset(&h->mac_addr, 0, sizeof(h->mac_addr));
    h->ports_tcp = NULL;
@@ -245,6 +279,7 @@ free_func_host(struct bucket *b)
 {
    struct host *h = &(b->u.host);
    if (h->dns != NULL) free(h->dns);
+   if (h->country != NULL) free(h->country);
    hashtable_free(h->ports_tcp);
    hashtable_free(h->ports_tcp_remote);
    hashtable_free(h->ports_udp);
@@ -298,6 +333,7 @@ format_cols_host(struct str *buf)
       "<table>\n"
       "<tr>\n"
       " <th>IP</th>\n"
+      " <th>Country</th>\n"
       " <th>Hostname</th>\n");
    if (hosts_db_show_macs) str_append(buf,
       " <th>MAC Address</th>\n");
@@ -315,12 +351,13 @@ static void
 format_row_host(struct str *buf, const struct bucket *b)
 {
    const char *ip = addr_to_str(&(b->u.host.addr));
-
    str_appendf(buf,
       "<tr>\n"
       " <td><a href=\"./%s/\">%s</a></td>\n"
+      " <td>%s</td>\n"
       " <td>%s</td>\n",
       ip, ip,
+      (b->u.host.country == NULL) ? "" :b->u.host.country,
       (b->u.host.dns == NULL) ? "" : b->u.host.dns);
 
    if (hosts_db_show_macs)
