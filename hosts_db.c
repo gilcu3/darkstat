@@ -222,7 +222,6 @@ country_lookup(char** country, const struct addr* address)
    ip = addr_to_str(address);
    
    if(address->family == IPv4){
-     // = xstrdup("dassa");
      gi = GeoIP_open("/usr/share/GeoIP/GeoIP.dat", GEOIP_STANDARD | GEOIP_CHECK_CACHE);
      correct = 0;
    }
@@ -239,6 +238,7 @@ country_lookup(char** country, const struct addr* address)
       if(returnedCountry != NULL){
          *country = xstrdup(returnedCountry);
       }
+      GeoIP_delete(gi);
    }
 }
 
