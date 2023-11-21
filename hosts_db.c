@@ -221,20 +221,23 @@ country_lookup(char** country, const struct addr* address)
    *country = NULL;
    ip = addr_to_str(address);
    
+   correct = 1;
    if(address->family == IPv4){
      gi = GeoIP_open("/usr/share/GeoIP/GeoIP.dat", GEOIP_STANDARD | GEOIP_CHECK_CACHE);
-     correct = 0;
+     if(gi != NULL){
+         returnedCountry = GeoIP_country_code_by_name(gi, ip);
+         correct = 0;
+      }
    }
    else if(address->family == IPv6){
       gi = GeoIP_open("/usr/share/GeoIP/GeoIPv6.dat", GEOIP_STANDARD | GEOIP_CHECK_CACHE);
-      correct = 0;
-   }
-   else{
-      correct = 1;
+      if(gi != NULL){
+         returnedCountry = GeoIP_country_code_by_name_v6(gi, ip);
+         correct = 0;
+      }
    }
 
-   if(correct == 0 && gi != NULL){
-      returnedCountry = GeoIP_country_code_by_name(gi, ip);
+   if(correct == 0){
       if(returnedCountry != NULL){
          *country = xstrdup(returnedCountry);
       }
